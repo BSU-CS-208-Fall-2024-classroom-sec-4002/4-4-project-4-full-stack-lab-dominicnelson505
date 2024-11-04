@@ -1,3 +1,27 @@
-body{
-    background-color: hotpink;
-}
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    text-align: center;
+  }
+  
+  h1 {
+    color: #2c3e50;
+  }
+  
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  li {
+    padding: 10px;
+    background-color: #ecf0f1;
+    margin: 5px 0;
+    border-radius: 5px;
+  }
+  
+  form {
+    margin: 10px 0;
+  }
+  

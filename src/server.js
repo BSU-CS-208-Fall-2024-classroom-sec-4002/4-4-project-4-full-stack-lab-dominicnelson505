@@ -1,44 +1,68 @@
-import express from 'express'
-import sql from 'sqlite3'
+import express from 'express';
+import bodyParser from 'body-parser';
+import sqlite3Module from 'sqlite3';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const sqlite3 = sql.verbose()
+// Use `fileURLToPath` to get the path to the current file
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-// Create an in memory table to use
-const db = new sqlite3.Database(':memory:')
+const sqlite3 = sqlite3Module.verbose();
+const db = new sqlite3.Database(':memory:');
 
-// This is just for testing you would not want to create the table every
-// time you start up the app feel free to improve this code :)
+// Create the todo table
 db.run(`CREATE TABLE todo (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    task TEXT NOT NULL)`)
+    task TEXT NOT NULL
+)`);
 
-const app = express()
-app.use(express.static('public'))
-app.set('views', 'views')
-app.set('view engine', 'pug')
-app.use(express.urlencoded({ extended: false }))
+const app = express();
+app.set('view engine', 'pug');
+app.set('views', path.join(__dirname, '../views')); // Updated path for views directory
+app.use(express.static(path.join(__dirname, '../public'))); // Updated path for static files
+app.use(bodyParser.urlencoded({ extended: true }));
 
-app.get('/', function (req, res) {
-    //TODO You will need to do a SQL select here
-    //TODO You will need to update the code below!
-    console.log('GET called')
-    res.render('index')
+// Get route to display tasks
+app.get('/', (req, res) => {
+  const local = { tasks: [] };
+  db.each('SELECT id, task FROM todo', (err, row) => {
+    if (err) {
+      console.error(err.message);
+    } else {
+      local.tasks.push({ id: row.id, task: row.task });
+    }
+  }, (err, numRows) => {
+    if (!err) {
+      res.render('index', local);
+    } else {
+      console.error(err.message);
+    }
+  });
+});
 
-})
+// Add task route
+app.post('/add', (req, res) => {
+  const stmt = db.prepare('INSERT INTO todo (task) VALUES (?)');
+  stmt.run(req.body.todo, (err) => {
+    if (err) console.error(err.message);
+  });
+  stmt.finalize();
+  res.redirect('/');
+});
 
-app.post('/', function (req, res) {
-    console.log('adding todo item')
-    //TODO You will need to to do a SQL Insert here
+// Delete task route
+app.post('/delete', (req, res) => {
+  const stmt = db.prepare('DELETE FROM todo WHERE id = ?');
+  stmt.run(req.body.id, (err) => {
+    if (err) console.error(err.message);
+  });
+  stmt.finalize();
+  res.redirect('/');
+});
 
-})
-
-app.post('/delete', function (req, res) {
-    console.log('deleting todo item')
-    //TODO you will need to delete here
-
-})
-
-// Start the web server
-app.listen(3000, function () {
-    console.log('Listening on port 3000...')
-})
+// Start the server
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Listening on port ${PORT}...`);
+});
